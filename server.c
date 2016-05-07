@@ -10,13 +10,6 @@
 #include "message.h"
 #include "err.h"
 
-#define TRUE 1
-#define FALSE 0
-#define BUF_SIZE 1024
-#define PORT_NUM 20160
-#define BUFF_SIZE   1000
-#define PORT_SIGN   "20160"
-
 static int finish = FALSE;
 
 /* Obsługa sygnału kończenia */
@@ -29,7 +22,7 @@ static void catch_int (int sig) {
 int main (int argc, char *argv[]) {
     struct pollfd client[_POSIX_OPEN_MAX]; //do trzymania klientów
     struct sockaddr_in server;
-    char buf[BUF_SIZE];
+    char buf[MAX_MESSAGE_SIZE];
     size_t length;
     ssize_t rval;
     int msgsock, activeClients, i, ret;
@@ -42,8 +35,8 @@ int main (int argc, char *argv[]) {
         port = PORT_SIGN;
     } else {
 //        fatal("Usage: %s port or without any parameters", argv[0]); //nie można użyć fatal, gdyz wyrzuca inny nr
-        fprintf(stderr, "ERROR: Usage: %s port or without any parameters", argv[0]);
-        return 130;
+        fprintf(stderr, "ERROR: Usage: %s port or without any parameters\n", argv[0]);
+        return 1;
     }
 
     /* Po Ctrl-C kończymy */
