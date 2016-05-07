@@ -8,9 +8,7 @@ struct message{
     char text[0];
 } __attribute__((packed));
 
-void test(){
-    printf("z pliku message.h\n");
-}
+void test();
 
 //@TODO: read_all(fd, buf, len): -1 (err), liczba przecztanych bajtów
 //@TODO: write_all(fd, buf, len): -1 (err), liczba wysłanych bajtów        ---> na wypadek zapchanego bufora
