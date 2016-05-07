@@ -1,8 +1,12 @@
 Usage:
 
+
 server: ./server [port_number]
 
 client: ./client host [port_number]
+
+
+
 
 
 
