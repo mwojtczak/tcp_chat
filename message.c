@@ -17,15 +17,15 @@ ssize_t read_all(int fd, void *buf, size_t count){
             //probably end of file: stop reading cause there is nothing else
             //@TODO: ?
             //break;
-            printf("got 0 bytes\n");
+//            printf("got 0 bytes\n");
             return received;
         } else {
-            printf("got some bytes %d\n", result);
+//            printf("got some bytes %d\n", result);
             received += result;
-            printf("got all bytes %d\n", received);
+//            printf("got all bytes %d\n", received);
         }
     }
-    printf("returning: %d\n", received);
+//    printf("returning: %d\n", received);
     return received;
 };
 

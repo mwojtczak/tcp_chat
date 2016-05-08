@@ -39,7 +39,7 @@ int main (int argc, char *argv[]) {
             printf(stderr, "ERROR: Usage: %s host [port]", argv[0]);
             return 1;
         }else{
-            printf("ok");
+//            printf("ok");
         }
         port = argv[2];
     } else {
@@ -93,21 +93,28 @@ int main (int argc, char *argv[]) {
             read_size = read(pfd[0].fd, read_line, MAX_MESSAGE_SIZE);
             int real_size = find_string_end(read_line);
             int found_size = real_size;
-            if (real_size > 0){
-
-                printf("sending message to my fellas: -->%.*s\n", found_size, read_line);
-                printf("size %d: \n", found_size);
+            if (found_size > 0){
+//                printf("sending message to my fellas: -->");
+                printf("%.*s\n", found_size, read_line);
+//                printf("size %d: \n", found_size);
 
                 //tworzę bufor do wysłania wiadomosci
                 struct message * mess = NULL;
                 mess = malloc(sizeof(struct message) + found_size);
                 mess->lenght = htons(found_size);
                 memcpy(&mess->text, read_line, found_size);
-
-                if (write(pfd[1].fd, mess, sizeof(struct message) + found_size) < 0)
-                    perror("writing on stream socket");
-
+                int sent = write(pfd[1].fd, mess, sizeof(struct message) + found_size);
                 free(mess);
+                if (sent < 0)
+                    perror("writing on stream socket");
+                else if (sent < sizeof(struct message) + found_size){
+                    //sth went wrong, end client with 130 code
+                    if (close(pfd[1].fd) < 0)
+                        perror("close");
+                    return 130;
+                }
+
+
             } else {
                 printf("Read empty line, doing nothing\n");
             }
@@ -118,15 +125,37 @@ int main (int argc, char *argv[]) {
             //better version:
             unsigned short message_size;
             //czytam liczbę
-            if (read(pfd[1].fd, (char*)&message_size, sizeof(message_size)) < 0)
+            int got;
+            got = read_all(pfd[1].fd, (char*)&message_size, sizeof(message_size));
+            if (got < 0)
                 perror("reading from stream socket");
-            message_size = ntohs(message_size);
-            //czytam resztę wiadomości
-            if (read(pfd[1].fd, read_line, message_size) < 0)
-                perror("reading from stream socket");
-            printf("my fella wrote: -->%.*s\n", strnlen(read_line, message_size), read_line);
-            //printf("my fella wrote: -->%.*s\n", strnlen(read_line, message_size), read_line);
-            printf("otrzymano: %d\n", message_size);
+            else if (got < sizeof(message_size)){
+                //sth went wrong, end client with 130 code
+                if (close(pfd[1].fd) < 0)
+                    perror("close");
+                return 130;
+            } else {
+
+                message_size = ntohs(message_size);
+                if (message_size > 0 && message_size <= MAX_MESSAGE_SIZE){
+                    //czytam resztę wiadomości
+                    int got = read_all(pfd[1].fd, read_line, message_size);
+                    if (got < 0)
+                        perror("reading from stream socket");
+                    else if (got < message_size){
+                        //sth went wrong, end client with 130 code
+                        if (close(pfd[1].fd) < 0)
+                            perror("close");
+                        return 130;
+                    } else {
+
+//                        printf("my fella wrote: -->");
+                        printf("%.*s\n", message_size, read_line);
+//                        printf("otrzymano: %d\n", message_size);
+
+                    }
+                }
+            }
         }
 
     }

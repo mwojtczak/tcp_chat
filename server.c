@@ -26,37 +26,12 @@ int main (int argc, char *argv[]) {
     size_t length;
     ssize_t rval;
     int msgsock, activeClients, i, ret;
-
-//    char test[11]; //BUFF_SIZE + 2
-//    char * a;
-//    int k;
-//    a = test;
-//    int n;
-//    //printf("%d\n", strlen("milla"));
-//    while ((n = read(0, test, 10)) > 0){ //musi czytać
-//        printf("find_string_end: %d\n", find_string_end(test));
-//        int siz = read(stdin, test, 10);
-//        for (k = 0; k < 10; ++k) {
-//            if(*(a + k) == '\n') {
-//                printf("/n %d\n", k);
-//            }
-//            if(*(a + k) == '\0') {
-//                printf("/0 %d\n", k);
-//            }
-//        }
-//        test[find_string_end(test)] = '\0';
-//        printf("find_string_end: %d %s\n", find_string_end(test), test);
-//    }
-//    printf("/n %d", find_string_end("\n\0\n\n"));
-//    printf(" OK\n");
+    char* port = PORT_SIGN;
 
 //check params
-    char* port;
     if (argc == 2){
         port = argv[1];
-    }else if(argc == 1){
-        port = PORT_SIGN;
-    } else {
+    } else if(argc != 1) {
 //        fatal("Usage: %s port or without any parameters", argv[0]); //nie można użyć fatal, gdyz wyrzuca inny nr
         fprintf(stderr, "ERROR: Usage: %s port or without any parameters\n", argv[0]);
         return 1;
@@ -149,68 +124,72 @@ int main (int argc, char *argv[]) {
                 if (client[i].fd != -1
                     && (client[i].revents & (POLLIN | POLLERR))) {
 //                    rval = read(client[i].fd, buf, BUF_SIZE);
-                    rval = read(client[i].fd, (char*)&message_size, sizeof(message_size));
+                    rval = read_all(client[i].fd, (char*)&message_size, sizeof(message_size));
                     if (rval < 0) {
                         perror("Reading stream message");
                         if (close(client[i].fd) < 0)
                             perror("close");
                         client[i].fd = -1;
                         activeClients -= 1;
-                    }
-                    else if (rval == 0) {
+                    } else if (rval == 0) {
                         fprintf(stderr, "Ending connection\n");
                         if (close(client[i].fd) < 0)
                             perror("close");
                         client[i].fd = -1;
                         activeClients -= 1;
-                    }
-                    else{
+                    } else{
                         //przekonwertuj:
                         message_size = ntohs(message_size);
-                        //doczytaj reszte wiadomości
-                        int received = 0;
-//                        int to_be_received = message_size;
-//                        while (to_be_received){
-//                            rval = read(client[i].fd, buf + received, to_be_received);
-//                            if ((rval) < 0){
-//                                printf("SOME ERROR< leaving the loop");
-//                                break;
-//                            }
-//                            if (rval == 0){
-//                                //maybe end of file, maybe error, check if read all message
-//                            } else {
-//                                received += rval;
-//                                to_be_received -= rval;
-//                            }
-//                        }
-                        received = read_all(client[i].fd, buf, message_size);
-                        rval = received;
+                        //sprawdz czy rozmiar wiadomości jest w porządku:
+                        if (message_size > 0 && message_size <= MAX_MESSAGE_SIZE){
+
+                            //doczytaj reszte wiadomości
+                            int received = 0;
+                            received = read_all(client[i].fd, buf, message_size);
+                            rval = received;
 //
-                        if (received == message_size){
-                            printf("wiadomość od %d o rozmiarze %d: ", i, message_size);
-                            printf("-->%.*s\n", (int)received, buf);
-                        }else{
-                            //@TODO: zakoncz klienta,
-                            printf("wiadomość od %d o rozmiarze %d a zadeklarowano %d: ", i, received, message_size);
-                            printf("-->%.*s\n", (int)received, buf);
-                            break;
-                        }
+                            if (received == message_size){
+//                                printf("wiadomość od %d o rozmiarze %d: ", i, message_size);
+                                printf("-->%.*s\n", (int)received, buf);
+                                //wszystko w porzadku
+                                //retransmituj do klientów
 
-                        //buduję wiadomość message:
-//                        message_to_send.lenght = htons(message_size);
-                        //buduję właściwą wiadomość:
-                        struct message * mess = NULL;
-                        mess = malloc(sizeof(struct message) + message_size);
-                        mess->lenght = htons(message_size);
-                        memcpy(&mess->text, buf, message_size);
+                                //buduję właściwą wiadomość:
+                                struct message * mess = NULL;
+                                mess = malloc(sizeof(struct message) + message_size);
+                                mess->lenght = htons(message_size);
+                                memcpy(&mess->text, buf, message_size);
 
-                        //do każdego z clientów != i wyslij wiadomość
-                        int j;
-                        for (j = 1; j < _POSIX_OPEN_MAX; ++j) {
-                            if ((i != j) && (client[j].fd != -1) && (client[i].events & (POLLOUT))){
-                                if (write(client[j].fd, mess, sizeof(struct message) + message_size) < 0)
-                                    perror("writing on stream socket");
+                                //do każdego z clientów != i wyslij wiadomość
+                                int j;
+                                for (j = 1; j < _POSIX_OPEN_MAX; ++j) {
+                                    if ((i != j) && (client[j].fd != -1) && (client[i].events & (POLLOUT))){
+                                        rval = write_all(client[j].fd, mess, sizeof(struct message) + message_size);
+                                        if (rval < 0)
+                                            perror("writing on stream socket");
+                                        else if (rval < sizeof(struct message) + message_size){
+                                            //some error occured: not send everything:
+                                            //end this client
+                                            fprintf(stderr, "Ending connection\n");
+                                            if (close(client[j].fd) < 0)
+                                                perror("close");
+                                            client[j].fd = -1;
+                                            activeClients -= 1;
+                                        }
+                                    }
+                                }
+                            }else{
+                                //@TODO: zakoncz klienta, który wysyłał dane
+                                printf("wiadomość od %d o rozmiarze %d a zadeklarowano %d: ", i, received, message_size);
+                                printf("-->%.*s\n", (int)received, buf);
+                                fprintf(stderr, "Ending connection\n");
+                                if (close(client[i].fd) < 0)
+                                    perror("close");
+                                client[i].fd = -1;
+                                activeClients -= 1;
+                                break;
                             }
+
                         }
                     }
                 }
