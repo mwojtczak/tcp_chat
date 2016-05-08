@@ -13,25 +13,27 @@
 static int finish = FALSE;
 
 /* Obsługa sygnału kończenia */
-static void catch_int (int sig) {
+static void catch_int(int sig) {
     finish = TRUE;
     fprintf(stderr,
             "Signal %d catched. No new connections will be accepted.\n", sig);
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     struct pollfd client[_POSIX_OPEN_MAX]; //@TODO: max_clients + 1??
     struct sockaddr_in server;
     char buf[MAX_BUFF_SIZE];
     size_t length;
     ssize_t rval;
-    int msgsock, activeClients, i, ret;
-    char* port = PORT_SIGN;
+    int msgsock, activeClients, i, j, ret, received;
+    unsigned short message_size;
+    char *port = PORT_SIGN;
+    struct message *mess = NULL;
 
 //check params
-    if (argc == 2){
+    if (argc == 2) {
         port = argv[1];
-    } else if(argc != 1) {
+    } else if (argc != 1) {
         fprintf(stderr, "ERROR: Usage: %s port or without any parameters\n", argv[0]);
         exit(EXIT_FAILURE_PARAMS);
     }
@@ -61,19 +63,11 @@ int main (int argc, char *argv[]) {
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT_NUM);  //tylko na naszym porcie
-    if (bind(client[0].fd, (struct sockaddr*)&server, (socklen_t)sizeof(server)) < 0) {
+    if (bind(client[0].fd, (struct sockaddr *) &server, (socklen_t)
+    sizeof(server)) < 0) {
         perror("Binding stream socket");
         exit(EXIT_FAILURE);
     }
-
-    /* Dowiedzmy się, jaki to port i obwieśćmy to światu */
-//    length = sizeof(server);
-//    if (getsockname (client[0].fd, (struct sockaddr*)&server,
-//                     (socklen_t*)&length) < 0) {
-//        perror("Getting socket name");
-//        exit(EXIT_FAILURE);
-//    }
-//    printf("Socket port #%u\n", (unsigned)ntohs(server.sin_port));
 
     /* Zapraszamy klientów */
     if (listen(client[0].fd, 5) == -1) {
@@ -99,10 +93,10 @@ int main (int argc, char *argv[]) {
             perror("poll");
         else if (ret > 0) {
             if (finish == FALSE && (client[0].revents & POLLIN)) {
-                msgsock = accept(client[0].fd, (struct sockaddr*)0, (socklen_t*)0);
-                if (msgsock == -1)
+                msgsock = accept(client[0].fd, (struct sockaddr *) 0, (socklen_t *) 0);
+                if (msgsock == -1) {
                     perror("accept");
-                else {
+                } else {
                     for (i = 1; i < _POSIX_OPEN_MAX; ++i) {
                         if (client[i].fd == -1) {
                             client[i].fd = msgsock;
@@ -117,12 +111,9 @@ int main (int argc, char *argv[]) {
                     }
                 }
             }
-            //tutaj deklaruję strukturę
-            unsigned short message_size;
             for (i = 1; i < _POSIX_OPEN_MAX; ++i) {
-                if (client[i].fd != -1
-                    && (client[i].revents & (POLLIN | POLLERR))) {
-                    rval = read_all(client[i].fd, (char*)&message_size, sizeof(message_size));
+                if (client[i].fd != -1 && (client[i].revents & (POLLIN | POLLERR))) {
+                    rval = read_all(client[i].fd, (char *) &message_size, sizeof(message_size));
                     if (rval < 0) {
                         perror("Reading stream message");
                         if (close(client[i].fd) < 0)
@@ -130,45 +121,29 @@ int main (int argc, char *argv[]) {
                         client[i].fd = -1;
                         activeClients -= 1;
                     } else if (rval == 0) {
-                        fprintf(stderr, "Ending connection\n");
+                        fprintf(stderr, "Ending connection, some troubles reading from client\n");
                         if (close(client[i].fd) < 0)
                             perror("close");
                         client[i].fd = -1;
                         activeClients -= 1;
-                    } else{
-                        //przekonwertuj:
+                    } else {
                         message_size = ntohs(message_size);
-                        //sprawdz czy rozmiar wiadomości jest w porządku:
-                        if (message_size > 0 && message_size <= MAX_MESSAGE_SIZE){
-
-                            //doczytaj reszte wiadomości
-                            int received = 0;
+                        if (message_size > 0 && message_size <= MAX_MESSAGE_SIZE) {
                             received = read_all(client[i].fd, buf, message_size);
-                            rval = received;
-//
-                            if (received == message_size){
-//                                printf("wiadomość od %d o rozmiarze %d: ", i, message_size);
-                                printf("-->%.*s\n", (int)received, buf);
-                                //wszystko w porzadku
-                                //retransmituj do klientów
 
-                                //buduję właściwą wiadomość:
-                                struct message * mess = malloc(sizeof(struct message) + message_size);
-                                mess->lenght = htons(message_size);
-                                memcpy(&mess->text, buf, message_size);
+                            if (received == message_size) {
+                                printf("-->%.*s\n", (int) received, buf);
+
+                                mess = malloc(sizeof(struct message) + message_size);
                                 copy_message_into_struct(mess, message_size, buf);
 
-                                //do każdego z clientów != i wyslij wiadomość
-                                int j;
                                 for (j = 1; j < _POSIX_OPEN_MAX; ++j) {
-                                    if ((i != j) && (client[j].fd != -1) && (client[i].events & (POLLOUT))){
+                                    if ((i != j) && (client[j].fd != -1) && (client[i].events & (POLLOUT))) {
                                         rval = write_all(client[j].fd, mess, sizeof(struct message) + message_size);
                                         if (rval < 0)
                                             perror("writing on stream socket");
-                                        else if (rval < sizeof(struct message) + message_size){
-                                            //some error occured: not send everything:
-                                            //end this client
-                                            fprintf(stderr, "Ending connection\n");
+                                        else if (rval < sizeof(struct message) + message_size) {
+                                            fprintf(stderr, "Ending connection, some troubles writing to client\n");
                                             if (close(client[j].fd) < 0)
                                                 perror("close");
                                             client[j].fd = -1;
@@ -176,10 +151,8 @@ int main (int argc, char *argv[]) {
                                         }
                                     }
                                 }
-                            }else{
-                                //@TODO: zakoncz klienta, który wysyłał dane
-                                printf("wiadomość od %d o rozmiarze %d a zadeklarowano %d: ", i, received, message_size);
-                                printf("-->%.*s\n", (int)received, buf);
+                                free(mess);
+                            } else {
                                 fprintf(stderr, "Ending connection, some trouble while reading message\n");
                                 if (close(client[i].fd) < 0)
                                     perror("close");
@@ -187,7 +160,12 @@ int main (int argc, char *argv[]) {
                                 activeClients -= 1;
                                 break;
                             }
-
+                        } else {
+                            fprintf(stderr, "Ending connection, wrong data got sent\n");
+                            if (close(client[i].fd) < 0)
+                                perror("close");
+                            client[i].fd = -1;
+                            activeClients -= 1;
                         }
                     }
                 }
@@ -195,8 +173,7 @@ int main (int argc, char *argv[]) {
         }
     } while (finish == FALSE || activeClients > 0);
 
-    if (client[0].fd >= 0)
-    if (close(client[0].fd) < 0)
+    if (client[0].fd >= 0) if (close(client[0].fd) < 0)
         perror("Closing main socket");
     exit(EXIT_SUCCESS);
 }

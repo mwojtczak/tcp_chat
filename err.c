@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "err.h"
+#include "message.h"
 
 void syserr(const char *fmt, ...) {
     va_list fmt_args;

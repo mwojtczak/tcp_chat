@@ -13,13 +13,13 @@
 #define EXIT_FAILURE_PARAMS 1
 #define EXIT FAILURE 130
 
-struct message{
+struct message {
     unsigned short lenght;
     //char* text;
     char text[0];
 } __attribute__((packed));
 
-struct message1{
+struct message1 {
     unsigned short lenght;
     //char* text;
 } __attribute__((packed));
@@ -30,11 +30,11 @@ ssize_t read_all(int fd, void *buf, size_t count);
 
 ssize_t write_all(int fd, const void *buf, size_t count);
 
-int is_port_number(char * num);
+int is_port_number(char *num);
 
-int find_string_end(char * str);
+int find_string_end(char *str);
 
-void copy_message_into_struct(struct message * mess, unsigned short size, char * buff);
+void copy_message_into_struct(struct message *mess, unsigned short size, char *buff);
 
 #define MESSAGE_H
 
