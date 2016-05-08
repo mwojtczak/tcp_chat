@@ -20,13 +20,35 @@ static void catch_int (int sig) {
 }
 
 int main (int argc, char *argv[]) {
-    struct pollfd client[_POSIX_OPEN_MAX]; //do trzymania klientów
+    struct pollfd client[_POSIX_OPEN_MAX]; //@TODO: max_clients + 1??
     struct sockaddr_in server;
-    char buf[MAX_MESSAGE_SIZE];
+    char buf[MAX_BUFF_SIZE];
     size_t length;
     ssize_t rval;
     int msgsock, activeClients, i, ret;
 
+//    char test[11]; //BUFF_SIZE + 2
+//    char * a;
+//    int k;
+//    a = test;
+//    int n;
+//    //printf("%d\n", strlen("milla"));
+//    while ((n = read(0, test, 10)) > 0){ //musi czytać
+//        printf("find_string_end: %d\n", find_string_end(test));
+//        int siz = read(stdin, test, 10);
+//        for (k = 0; k < 10; ++k) {
+//            if(*(a + k) == '\n') {
+//                printf("/n %d\n", k);
+//            }
+//            if(*(a + k) == '\0') {
+//                printf("/0 %d\n", k);
+//            }
+//        }
+//        test[find_string_end(test)] = '\0';
+//        printf("find_string_end: %d %s\n", find_string_end(test), test);
+//    }
+//    printf("/n %d", find_string_end("\n\0\n\n"));
+//    printf(" OK\n");
 
 //check params
     char* port;
@@ -47,9 +69,9 @@ int main (int argc, char *argv[]) {
     }
 
     /* Inicjujemy tablicę z gniazdkami klientów, client[0] to gniazdko centrali */
-    for (i = 0; i < _POSIX_OPEN_MAX; ++i) {
+    for (i = 0; i < _POSIX_OPEN_MAX; ++i) { //@TODO: max_clients + 1??
         client[i].fd = -1;
-        client[i].events = POLLIN | POLLOUT;
+        client[i].events = POLLIN | POLLOUT; //@TODO: ??
         client[i].revents = 0;
     }
     activeClients = 0;
@@ -147,25 +169,31 @@ int main (int argc, char *argv[]) {
                         message_size = ntohs(message_size);
                         //doczytaj reszte wiadomości
                         int received = 0;
-                        int to_be_received = message_size;
-                        while (to_be_received){
-                            rval = read(client[i].fd, buf + received, to_be_received);
-                            if ((rval) < 0){
-                                printf("SOME ERROR< leaving the loop");
-                                break;
-                            }
-                            if (rval == 0){
-                                //maybe end of file, maybe error, check if read all message
-                            } else {
-                                received += rval;
-                                to_be_received -= rval;
-                            }
-                        }
-//
+//                        int to_be_received = message_size;
+//                        while (to_be_received){
+//                            rval = read(client[i].fd, buf + received, to_be_received);
+//                            if ((rval) < 0){
+//                                printf("SOME ERROR< leaving the loop");
+//                                break;
+//                            }
+//                            if (rval == 0){
+//                                //maybe end of file, maybe error, check if read all message
+//                            } else {
+//                                received += rval;
+//                                to_be_received -= rval;
+//                            }
+//                        }
+                        received = read_all(client[i].fd, buf, message_size);
+                        rval = received;
 //
                         if (received == message_size){
                             printf("wiadomość od %d o rozmiarze %d: ", i, message_size);
                             printf("-->%.*s\n", (int)received, buf);
+                        }else{
+                            //@TODO: zakoncz klienta,
+                            printf("wiadomość od %d o rozmiarze %d a zadeklarowano %d: ", i, received, message_size);
+                            printf("-->%.*s\n", (int)received, buf);
+                            break;
                         }
 
                         //buduję wiadomość message:

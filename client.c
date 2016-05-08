@@ -22,8 +22,8 @@ int main (int argc, char *argv[]) {
     int rc;
     int sock;
     struct addrinfo addr_hints, *addr_result;
-    char line[MAX_MESSAGE_SIZE];
-    char read_line[MAX_MESSAGE_SIZE];
+    char line[MAX_BUFF_SIZE];
+    char read_line[MAX_BUFF_SIZE];
     char* port;
     size_t line_size;
     int maxi = 1;
@@ -91,36 +91,26 @@ int main (int argc, char *argv[]) {
         if(pfd[0].revents & POLLIN) { //stdin
             //process input and perform command
             read_size = read(pfd[0].fd, read_line, MAX_MESSAGE_SIZE);
-            printf("sending message to my fellas: -->%.*s\n", read_size, read_line);
+            int real_size = find_string_end(read_line);
+            int found_size = real_size;
+            if (real_size > 0){
 
-            //tworzę bufor do wysłania wiadomosci
-            struct message * mess = NULL;
-            mess = malloc(sizeof(struct message) + read_size);
-            mess->lenght = htons(read_size);
-            memcpy(&mess->text, read_line, read_size);
+                printf("sending message to my fellas: -->%.*s\n", found_size, read_line);
+                printf("size %d: \n", found_size);
 
-//            if (write(pfd[1].fd, &message_to_send, sizeof(message_to_send)) < 0)
-            if (write(pfd[1].fd, mess, sizeof(struct message) + read_size) < 0)
-                perror("writing on stream socket");
+                //tworzę bufor do wysłania wiadomosci
+                struct message * mess = NULL;
+                mess = malloc(sizeof(struct message) + found_size);
+                mess->lenght = htons(found_size);
+                memcpy(&mess->text, read_line, found_size);
 
-            free(mess);
-//            struct message1 message_to_send;
-//            message_to_send.lenght = htons(read_size);
-//            //tworzę bufor do wysłania wiadomosci
-////            struct message * mess = NULL;
-////            mess = malloc(sizeof(struct message) + read_size);
-////            memset(mess, 0, sizeof(struct message) + read_size);
-////            mess->lenght = htons(read_size);
-////            memcpy(&mess->text, read_line, read_size);
-////            printf("wysyłam: -->%.*s\n", read_size, mess->text);
-////            printf("OK %d !!!!!!!!!!!!!!!!!!!! %d \n", ntohs(mess->lenght), sizeof(struct message) + read_size);
-////            test();
-//            if (write(pfd[1].fd, &message_to_send, sizeof(struct message1)) < 0) {
-//                perror("writing on stream socket");
-//            }
-//            printf("hi\n");
-//            free(mess);
+                if (write(pfd[1].fd, mess, sizeof(struct message) + found_size) < 0)
+                    perror("writing on stream socket");
 
+                free(mess);
+            } else {
+                printf("Read empty line, doing nothing\n");
+            }
         }
         clear_line(read_line);
         if(pfd[1].revents & POLLIN) {

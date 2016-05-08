@@ -17,11 +17,15 @@ ssize_t read_all(int fd, void *buf, size_t count){
             //probably end of file: stop reading cause there is nothing else
             //@TODO: ?
             //break;
+            printf("got 0 bytes\n");
             return received;
         } else {
+            printf("got some bytes %d\n", result);
             received += result;
+            printf("got all bytes %d\n", received);
         }
     }
+    printf("returning: %d\n", received);
     return received;
 };
 
@@ -57,4 +61,19 @@ int is_port_number(char * num){
     if ((number < 1) || (number > MAX_PORT_NO))
         return 0;
     return 1;
+}
+
+
+//@TODO: znaleźć w str miejsce wystąpienia pierwszego \n lub strlen(str): o 1 wcześniej zakończyć dł stringa
+
+//zwraca pozycję pierwszego napotkanego \n lub \0: słowem pozycję DO KTÓREJ należy czytać stringa: czyli jego właściwą długość bez tych znaków
+//wyślij tyle znaków do bufora, ile zwróciła ta funkcja
+int find_string_end(char * str){
+    int index = strnlen(str, MAX_MESSAGE_SIZE); // @TODO: MAX_MASS_SIZe
+    const char *ptr = strchr(str, '\n');
+    if(ptr) {
+        if (ptr - str < index)
+            index = ptr - str;
+    }
+    return index;
 }

@@ -2,10 +2,14 @@
 
 #define TRUE 1
 #define FALSE 0
-#define MAX_MESSAGE_SIZE 1000
+//#define MAX_MESSAGE_SIZE 1000
+#define MAX_MESSAGE_SIZE 10
+#define MAX_BUFF_SIZE 12
+
 #define PORT_NUM 20160
 #define PORT_SIGN "20160"
 #define MAX_PORT_NO 65535
+#define MAX_CLIENTS 20
 
 struct message{
     unsigned short lenght;
@@ -26,8 +30,7 @@ ssize_t write_all(int fd, const void *buf, size_t count);
 
 int is_port_number(char * num);
 
-//@TODO: read_all(fd, buf, len): -1 (err), liczba przecztanych bajtów
-//@TODO: write_all(fd, buf, len): -1 (err), liczba wysłanych bajtów        ---> na wypadek zapchanego bufora
+int find_string_end(char * str);
 
 #define MESSAGE_H
 
