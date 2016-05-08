@@ -34,6 +34,8 @@ int is_port_number(char * num);
 
 int find_string_end(char * str);
 
+void copy_message_into_struct(struct message * mess, unsigned short size, char * buff);
+
 #define MESSAGE_H
 
 #endif //MESSAGE_H

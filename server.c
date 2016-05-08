@@ -153,10 +153,10 @@ int main (int argc, char *argv[]) {
                                 //retransmituj do klientów
 
                                 //buduję właściwą wiadomość:
-                                struct message * mess = NULL;
-                                mess = malloc(sizeof(struct message) + message_size);
+                                struct message * mess = malloc(sizeof(struct message) + message_size);
                                 mess->lenght = htons(message_size);
                                 memcpy(&mess->text, buf, message_size);
+                                copy_message_into_struct(mess, message_size, buf);
 
                                 //do każdego z clientów != i wyslij wiadomość
                                 int j;

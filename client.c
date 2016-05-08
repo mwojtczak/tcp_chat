@@ -82,16 +82,16 @@ int main (int argc, char *argv[]) {
         action = poll(pfd, 2, 0);
         if(pfd[0].revents & POLLIN) { //stdin
             read_size = read(pfd[0].fd, read_line, MAX_MESSAGE_SIZE);
-            int text_size = find_string_end(read_line);
+            unsigned short text_size = (unsigned short)find_string_end(read_line);
             if (text_size > 0){
 //                printf("sending message to my fellas: -->");
                 //printf("%.*s\n", text_size, read_line);
 
                 //tworzę bufor do wysłania wiadomosci
-                struct message * mess = NULL;
-                mess = malloc(sizeof(struct message) + text_size);
-                mess->lenght = htons(text_size);
-                memcpy(&mess->text, read_line, text_size);
+                struct message * mess = malloc(sizeof(struct message) + text_size);
+//                mess->lenght = htons(text_size);
+//                memcpy(&mess->text, read_line, text_size);
+                copy_message_into_struct(mess, text_size, read_line);
                 int sent = write(pfd[1].fd, mess, sizeof(struct message) + text_size);
                 free(mess);
                 if (sent < 0){
