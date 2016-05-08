@@ -77,3 +77,8 @@ int find_string_end(char * str){
     }
     return index;
 }
+
+void copy_message_into_struct(struct message * mess, unsigned short size, char * buff){
+    mess->lenght = htons(size);
+    memcpy(&mess->text, buff, size);
+}

@@ -22,11 +22,9 @@ int main (int argc, char *argv[]) {
     int rc;
     int sock;
     struct addrinfo addr_hints, *addr_result;
-    char line[MAX_BUFF_SIZE];
     char read_line[MAX_BUFF_SIZE];
     char* port;
     size_t line_size;
-    int maxi = 1;
 
     /* Kontrola dokumentów ... */
     if (argc == 2){
@@ -34,18 +32,13 @@ int main (int argc, char *argv[]) {
     }
     else if (argc == 3) {
         if (!is_port_number(argv[2])){
-
-            printf("ERROR: Usage: %s host [port]", argv[0]);
-            printf(stderr, "ERROR: Usage: %s host [port]", argv[0]);
-            return 1;
-        }else{
-//            printf("ok");
+            fprintf(stderr, "ERROR: Usage: %s host [port]", argv[0]);
+            exit(EXIT_FAILURE_PARAMS);
         }
         port = argv[2];
     } else {
-//        fatal("Usage: %s host port", argv[0]);
         fprintf(stderr, "ERROR: Usage: %s host [port]", argv[0]);
-        return 1;
+        exit(EXIT_FAILURE_PARAMS);
     }
 
     sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -65,8 +58,8 @@ int main (int argc, char *argv[]) {
     addr_hints.ai_canonname = NULL;
     addr_hints.ai_next = NULL;
     rc =  getaddrinfo(argv[1], port, &addr_hints, &addr_result);
+    
     if (rc != 0) {
-        fprintf(stderr, "rc=%d\n", rc);
         syserr("getaddrinfo: %s", gai_strerror(rc));
     }
 
@@ -85,44 +78,38 @@ int main (int argc, char *argv[]) {
     int sockfd;
     int read_size;
     while(TRUE){
-        //clear_line(read_line);
-        memset(read_line, 0, MAX_MESSAGE_SIZE);
-        action = poll(pfd, maxi + 1, 0);
+        memset(read_line, 0, MAX_BUFF_SIZE);
+        action = poll(pfd, 2, 0);
         if(pfd[0].revents & POLLIN) { //stdin
-            //process input and perform command
             read_size = read(pfd[0].fd, read_line, MAX_MESSAGE_SIZE);
-            int real_size = find_string_end(read_line);
-            int found_size = real_size;
-            if (found_size > 0){
+            int text_size = find_string_end(read_line);
+            if (text_size > 0){
 //                printf("sending message to my fellas: -->");
-                printf("%.*s\n", found_size, read_line);
-//                printf("size %d: \n", found_size);
+                //printf("%.*s\n", text_size, read_line);
 
                 //tworzę bufor do wysłania wiadomosci
                 struct message * mess = NULL;
-                mess = malloc(sizeof(struct message) + found_size);
-                mess->lenght = htons(found_size);
-                memcpy(&mess->text, read_line, found_size);
-                int sent = write(pfd[1].fd, mess, sizeof(struct message) + found_size);
+                mess = malloc(sizeof(struct message) + text_size);
+                mess->lenght = htons(text_size);
+                memcpy(&mess->text, read_line, text_size);
+                int sent = write(pfd[1].fd, mess, sizeof(struct message) + text_size);
                 free(mess);
-                if (sent < 0)
+                if (sent < 0){
                     perror("writing on stream socket");
-                else if (sent < sizeof(struct message) + found_size){
+                    exit(EXIT_FAILURE);
+                } else if (sent < sizeof(struct message) + text_size){
                     //sth went wrong, end client with 130 code
                     if (close(pfd[1].fd) < 0)
                         perror("close");
-                    return 130;
+                    exit(EXIT_FAILURE);
                 }
-
-
             } else {
-                printf("Read empty line, doing nothing\n");
+               // printf("Read empty line, doing nothing\n");
             }
         }
         clear_line(read_line);
         if(pfd[1].revents & POLLIN) {
             //from server: read and printf
-            //better version:
             unsigned short message_size;
             //czytam liczbę
             int got;
@@ -133,7 +120,7 @@ int main (int argc, char *argv[]) {
                 //sth went wrong, end client with 130 code
                 if (close(pfd[1].fd) < 0)
                     perror("close");
-                return 130;
+                exit(EXIT_FAILURE);
             } else {
 
                 message_size = ntohs(message_size);
@@ -146,9 +133,8 @@ int main (int argc, char *argv[]) {
                         //sth went wrong, end client with 130 code
                         if (close(pfd[1].fd) < 0)
                             perror("close");
-                        return 130;
+                        exit(EXIT_FAILURE);
                     } else {
-
 //                        printf("my fella wrote: -->");
                         printf("%.*s\n", message_size, read_line);
 //                        printf("otrzymano: %d\n", message_size);
@@ -159,5 +145,5 @@ int main (int argc, char *argv[]) {
         }
 
     }
-    return 0;
+    exit(EXIT_SUCCESS);
 }

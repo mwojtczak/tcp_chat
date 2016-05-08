@@ -32,9 +32,8 @@ int main (int argc, char *argv[]) {
     if (argc == 2){
         port = argv[1];
     } else if(argc != 1) {
-//        fatal("Usage: %s port or without any parameters", argv[0]); //nie można użyć fatal, gdyz wyrzuca inny nr
         fprintf(stderr, "ERROR: Usage: %s port or without any parameters\n", argv[0]);
-        return 1;
+        exit(EXIT_FAILURE_PARAMS);
     }
 
     /* Po Ctrl-C kończymy */
@@ -123,7 +122,6 @@ int main (int argc, char *argv[]) {
             for (i = 1; i < _POSIX_OPEN_MAX; ++i) {
                 if (client[i].fd != -1
                     && (client[i].revents & (POLLIN | POLLERR))) {
-//                    rval = read(client[i].fd, buf, BUF_SIZE);
                     rval = read_all(client[i].fd, (char*)&message_size, sizeof(message_size));
                     if (rval < 0) {
                         perror("Reading stream message");
@@ -182,7 +180,7 @@ int main (int argc, char *argv[]) {
                                 //@TODO: zakoncz klienta, który wysyłał dane
                                 printf("wiadomość od %d o rozmiarze %d a zadeklarowano %d: ", i, received, message_size);
                                 printf("-->%.*s\n", (int)received, buf);
-                                fprintf(stderr, "Ending connection\n");
+                                fprintf(stderr, "Ending connection, some trouble while reading message\n");
                                 if (close(client[i].fd) < 0)
                                     perror("close");
                                 client[i].fd = -1;
