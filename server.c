@@ -27,6 +27,7 @@ int main (int argc, char *argv[]) {
     ssize_t rval;
     int msgsock, activeClients, i, ret;
 
+
 //check params
     char* port;
     if (argc == 2){
@@ -64,20 +65,19 @@ int main (int argc, char *argv[]) {
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT_NUM);  //tylko na naszym porcie
-    if (bind(client[0].fd, (struct sockaddr*)&server,
-             (socklen_t)sizeof(server)) < 0) {
+    if (bind(client[0].fd, (struct sockaddr*)&server, (socklen_t)sizeof(server)) < 0) {
         perror("Binding stream socket");
         exit(EXIT_FAILURE);
     }
 
     /* Dowiedzmy się, jaki to port i obwieśćmy to światu */
-    length = sizeof(server);
-    if (getsockname (client[0].fd, (struct sockaddr*)&server,
-                     (socklen_t*)&length) < 0) {
-        perror("Getting socket name");
-        exit(EXIT_FAILURE);
-    }
-    printf("Socket port #%u\n", (unsigned)ntohs(server.sin_port));
+//    length = sizeof(server);
+//    if (getsockname (client[0].fd, (struct sockaddr*)&server,
+//                     (socklen_t*)&length) < 0) {
+//        perror("Getting socket name");
+//        exit(EXIT_FAILURE);
+//    }
+//    printf("Socket port #%u\n", (unsigned)ntohs(server.sin_port));
 
     /* Zapraszamy klientów */
     if (listen(client[0].fd, 5) == -1) {
@@ -103,8 +103,7 @@ int main (int argc, char *argv[]) {
             perror("poll");
         else if (ret > 0) {
             if (finish == FALSE && (client[0].revents & POLLIN)) {
-                msgsock =
-                        accept(client[0].fd, (struct sockaddr*)0, (socklen_t*)0);
+                msgsock = accept(client[0].fd, (struct sockaddr*)0, (socklen_t*)0);
                 if (msgsock == -1)
                     perror("accept");
                 else {
@@ -124,7 +123,6 @@ int main (int argc, char *argv[]) {
             }
             //tutaj deklaruję strukturę
             unsigned short message_size;
-            struct message message_to_send;
             for (i = 1; i < _POSIX_OPEN_MAX; ++i) {
                 if (client[i].fd != -1
                     && (client[i].revents & (POLLIN | POLLERR))) {
@@ -166,11 +164,9 @@ int main (int argc, char *argv[]) {
 //
 //
                         if (received == message_size){
-                            printf("wiadomość od %d: ", i);
+                            printf("wiadomość od %d o rozmiarze %d: ", i, message_size);
+                            printf("-->%.*s\n", (int)received, buf);
                         }
-                        printf("-->%.*s\n", (int)received, buf);
-
-                        printf("wiadomość od %d: %d\n", i, message_size);
 
                         //buduję wiadomość message:
 //                        message_to_send.lenght = htons(message_size);
@@ -179,7 +175,6 @@ int main (int argc, char *argv[]) {
                         mess = malloc(sizeof(struct message) + message_size);
                         mess->lenght = htons(message_size);
                         memcpy(&mess->text, buf, message_size);
-//                        message_to_send.text = buf;
 
                         //do każdego z clientów != i wyslij wiadomość
                         int j;
@@ -187,19 +182,12 @@ int main (int argc, char *argv[]) {
                             if ((i != j) && (client[j].fd != -1) && (client[i].events & (POLLOUT))){
                                 if (write(client[j].fd, mess, sizeof(struct message) + message_size) < 0)
                                     perror("writing on stream socket");
-//                                if (write(client[j].fd, buf, (int)rval) < 0)
-//                                    perror("writing on stream socket");
-//                                printf("writing to clients\n");
                             }
-
-//                            printf("writing to clients\n");
                         }
                     }
                 }
             }
         }
-        else
-            fprintf(stderr, "Do something else\n");
     } while (finish == FALSE || activeClients > 0);
 
     if (client[0].fd >= 0)

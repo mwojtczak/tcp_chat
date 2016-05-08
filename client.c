@@ -33,6 +33,14 @@ int main (int argc, char *argv[]) {
         port = PORT_SIGN;
     }
     else if (argc == 3) {
+        if (!is_port_number(argv[2])){
+
+            printf("ERROR: Usage: %s host [port]", argv[0]);
+            printf(stderr, "ERROR: Usage: %s host [port]", argv[0]);
+            return 1;
+        }else{
+            printf("ok");
+        }
         port = argv[2];
     } else {
 //        fatal("Usage: %s host port", argv[0]);
@@ -77,7 +85,8 @@ int main (int argc, char *argv[]) {
     int sockfd;
     int read_size;
     while(TRUE){
-        clear_line(read_line);
+        //clear_line(read_line);
+        memset(read_line, 0, MAX_MESSAGE_SIZE);
         action = poll(pfd, maxi + 1, 0);
         if(pfd[0].revents & POLLIN) { //stdin
             //process input and perform command
@@ -90,10 +99,28 @@ int main (int argc, char *argv[]) {
             mess->lenght = htons(read_size);
             memcpy(&mess->text, read_line, read_size);
 
+//            if (write(pfd[1].fd, &message_to_send, sizeof(message_to_send)) < 0)
             if (write(pfd[1].fd, mess, sizeof(struct message) + read_size) < 0)
                 perror("writing on stream socket");
 
             free(mess);
+//            struct message1 message_to_send;
+//            message_to_send.lenght = htons(read_size);
+//            //tworzę bufor do wysłania wiadomosci
+////            struct message * mess = NULL;
+////            mess = malloc(sizeof(struct message) + read_size);
+////            memset(mess, 0, sizeof(struct message) + read_size);
+////            mess->lenght = htons(read_size);
+////            memcpy(&mess->text, read_line, read_size);
+////            printf("wysyłam: -->%.*s\n", read_size, mess->text);
+////            printf("OK %d !!!!!!!!!!!!!!!!!!!! %d \n", ntohs(mess->lenght), sizeof(struct message) + read_size);
+////            test();
+//            if (write(pfd[1].fd, &message_to_send, sizeof(struct message1)) < 0) {
+//                perror("writing on stream socket");
+//            }
+//            printf("hi\n");
+//            free(mess);
+
         }
         clear_line(read_line);
         if(pfd[1].revents & POLLIN) {
