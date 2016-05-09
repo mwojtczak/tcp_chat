@@ -57,12 +57,18 @@ int is_port_number(char * num){
 
 //zwraca pozycję pierwszego napotkanego \n lub \0: słowem pozycję DO KTÓREJ należy czytać stringa: czyli jego właściwą długość bez tych znaków
 //wyślij tyle znaków do bufora, ile zwróciła ta funkcja
+//zwraca długość słowa bez ostatniego \n
 int find_string_end(char * str){
     int index = strnlen(str, MAX_MESSAGE_SIZE); // @TODO: MAX_MASS_SIZe
-    const char *ptr = strchr(str, '\n');
-    if(ptr) {
-        if (ptr - str < index)
-            index = ptr - str;
+//    const char *ptr = strchr(str, '\n');
+//    if(ptr) {
+//        if (ptr - str < index)
+//            index = ptr - str;
+//    }
+//    return index;
+    if ((index > 0)){
+        if (*(str + index - 1) == '\n')
+            return index - 1;
     }
     return index;
 }

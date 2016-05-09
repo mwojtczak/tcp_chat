@@ -3,8 +3,8 @@
 #define TRUE 1
 #define FALSE 0
 //#define MAX_MESSAGE_SIZE 1000
-#define MAX_MESSAGE_SIZE 10
-#define MAX_BUFF_SIZE 12
+#define MAX_MESSAGE_SIZE 1000
+#define MAX_BUFF_SIZE 1002
 
 #define PORT_NUM 20160
 #define PORT_SIGN "20160"
