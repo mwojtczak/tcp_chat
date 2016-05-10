@@ -76,27 +76,8 @@ void accept_client() {
     }
 }
 
-//funkcja sprawdza, czy klient chce nawiązać połączenie
 void try_accept_new_client() {
-//    int i, msgsock;
     if (finish == FALSE && (client[0].revents & POLLIN)) {
-//        msgsock = accept(client[0].fd, (struct sockaddr *) 0, (socklen_t *) 0);
-//        if (msgsock == -1) {
-//            perror("accept");
-//        } else {
-//            for (i = 1; i < MAX_CLIENTS; ++i) {
-//                if (client[i].fd == -1) {
-//                    client[i].fd = msgsock;
-//                    activeClients += 1;
-//                    break;
-//                }
-//            }
-//            if (i >= MAX_CLIENTS) {
-//                fprintf(stderr, "Too many clients\n");
-//                if (close(msgsock) < 0)
-//                    perror("close");
-//            }
-//        }
         accept_client();
     }
 }
@@ -108,8 +89,6 @@ void close_client(int i) {
     activeClients -= 1;
 }
 
-//funkcja wysyła wiadomość o rozmiarze message_size przechowywaną w buf do wszystkich aktywnych klientów
-//za wyjątkiem nadawcy
 void send_to_all(unsigned short message_size, char *buf, int sender) {
     struct message *mess = malloc(sizeof(struct message) + message_size);
     copy_message_into_struct(mess, message_size, buf);
@@ -148,8 +127,6 @@ void look_for_clients() {
                     received = read_all(client[i].fd, buf, message_size);
                     if (received == message_size) {
                         send_to_all(message_size, buf, i);
-//                                printf("%d ", message_size);
-//                                printf("-->%.*s\n", (int) received, buf);
                     } else {
                         fprintf(stderr, "Ending connection, some troubles while reading message.\n");
                         close_client(i);
@@ -164,16 +141,8 @@ void look_for_clients() {
 }
 
 int main(int argc, char *argv[]) {
-
     struct sockaddr_in server;
-//    char buf[MAX_BUFF_SIZE];
-//    size_t length;
-//    ssize_t rval;
-//    int msgsock, i, j, ret, received;
-    int ret;
-//    unsigned short message_size;
-    int port;
-//    struct message *mess = NULL;
+    int ret, port;
 
     port = check_params(argc, argv);
 
@@ -189,10 +158,9 @@ int main(int argc, char *argv[]) {
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(port);  //tylko na naszym porcie //@TODO htons(port), port = PORT_NUM lub atoi(argv[1])
+    server.sin_port = htons(port);//@TODO htons(port), port = PORT_NUM lub atoi(argv[1])
 
-    check_errors(bind(client[0].fd, (struct sockaddr *) &server, (socklen_t)
-    sizeof(server)), "Binding stream socket");
+    check_errors(bind(client[0].fd, (struct sockaddr *) &server, (socklen_t) sizeof(server)), "Binding stream socket");
 
     check_errors(listen(client[0].fd, 20), "Starting to listen");
 
@@ -204,36 +172,11 @@ int main(int argc, char *argv[]) {
             check_errors(close(client[0].fd), "close");
         }
 
-        /* Czekamy przez 5000 ms */
         ret = poll(client, MAX_CLIENTS, 0); //@TODO: 5000 czy 0?
         if (ret < 0)
             perror("poll");
         else if (ret > 0) {
             try_accept_new_client();
-//            for (i = 1; i < MAX_CLIENTS; ++i) {
-//                if (client[i].fd != -1 && (client[i].revents & (POLLIN | POLLERR))) {
-//                    rval = read_all(client[i].fd, (char *) &message_size, sizeof(message_size));
-//                    if (rval < 0) {
-//                        close_client(i, "Reading stream message");
-//                    } else if (rval == 0) {
-//                        close_client(i,  "Ending connection, some troubles reading from client");
-//                    } else {
-//                        message_size = ntohs(message_size);
-//                        if (message_size > 0 && message_size <= MAX_MESSAGE_SIZE) {
-//                            received = read_all(client[i].fd, buf, message_size);
-//                            if (received == message_size) {
-//                                send_to_all(message_size, buf, i);
-////                                printf("%d ", message_size);
-////                                printf("-->%.*s\n", (int) received, buf);
-//                            } else {
-//                                close_client(i, "Ending connection, some trouble while reading message");
-//                            }
-//                        } else {
-//                            close_client(i, "Ending connection, wrong data got sent");
-//                        }
-//                    }
-//                }
-//            }
             look_for_clients();
         }
     } while (finish == FALSE || activeClients > 0);

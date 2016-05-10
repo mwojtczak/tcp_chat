@@ -1,10 +1,6 @@
 #include <stdlib.h>
 #include "message.h"
 
-void test(){
-    printf("z pliku message.h\n");
-}
-
 ssize_t read_all(int fd, void *buf, size_t count){
     size_t received = 0;
     while (received < count){
@@ -13,7 +9,6 @@ ssize_t read_all(int fd, void *buf, size_t count){
         if (result < 0){
             return -1;
         } else if (result == 0) {
-            //probably end of file: stop reading cause there is nothing else
             return received;
         } else {
             received += result;
@@ -28,10 +23,8 @@ ssize_t write_all(int fd, const void *buf, size_t count){
         int result;
         result = write(fd, buf + written, count - written);
         if (result < 0){
-            //some error occured
             return  -1;
         } else if (result == 0){
-            //happens when nothing was written, ex. full buffer: may cause never ending looping
             return result;
         } else {
             written += result;
@@ -40,7 +33,6 @@ ssize_t write_all(int fd, const void *buf, size_t count){
     return written;
 }
 
-//1 if is, 0 if isnt
 int is_port_number(char * num){
     size_t len = strlen(num);
     int i;
@@ -48,25 +40,15 @@ int is_port_number(char * num){
         if (!isdigit(*(num + i)))
             return 0;
     }
-    //convert to number & check if is from right range
     long number = strtol(num, NULL, 10);
     if ((number < 1) || (number > MAX_PORT_NO))
         return 0;
     return 1;
 }
 
-//zwraca pozycję pierwszego napotkanego \n lub \0: słowem pozycję DO KTÓREJ należy czytać stringa: czyli jego właściwą długość bez tych znaków
-//wyślij tyle znaków do bufora, ile zwróciła ta funkcja
-//zwraca długość słowa bez ostatniego \n
 int find_string_end(char * str){
-    int index = strnlen(str, MAX_MESSAGE_SIZE); // @TODO: MAX_MASS_SIZe
-//    const char *ptr = strchr(str, '\n');
-//    if(ptr) {
-//        if (ptr - str < index)
-//            index = ptr - str;
-//    }
-//    return index;
-    if ((index > 0)){
+    int index = strnlen(str, MAX_MESSAGE_SIZE);
+    if (index > 0){
         if (*(str + index - 1) == '\n')
             return index - 1;
     }
