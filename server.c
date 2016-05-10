@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(port);//@TODO htons(port), port = PORT_NUM lub atoi(argv[1])
+    server.sin_port = htons(port);
 
     check_errors(bind(client[0].fd, (struct sockaddr *) &server, (socklen_t) sizeof(server)), "Binding stream socket");
 
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
             check_errors(close(client[0].fd), "close");
         }
 
-        ret = poll(client, MAX_CLIENTS, 0); //@TODO: 5000 czy 0?
+        ret = poll(client, MAX_CLIENTS, 0);
         if (ret < 0)
             perror("poll");
         else if (ret > 0) {
