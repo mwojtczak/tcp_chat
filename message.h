@@ -9,7 +9,7 @@
 #define PORT_NUM 20160
 #define PORT_SIGN "20160"
 #define MAX_PORT_NO 65535
-#define MAX_CLIENTS 20
+#define MAX_CLIENTS 21
 #define EXIT_FAILURE_PARAMS 1
 #define EXIT FAILURE 130
 

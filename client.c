@@ -52,7 +52,7 @@ void send_to_server(struct pollfd pfd, char * read_line, unsigned short text_siz
         perror("writing on stream socket");
         exit(EXIT_FAILURE);
     } else if (sent < sizeof(struct message) + text_size) {
-        fprintf(stderr, "Ending connection, some trouble sending message");
+        fprintf(stderr, "Ending connection, some trouble sending message.\n");
         if (close(pfd.fd) < 0)
             perror("close");
         exit(EXIT_FAILURE);
@@ -62,8 +62,12 @@ void send_to_server(struct pollfd pfd, char * read_line, unsigned short text_siz
 void try_reading_from_stdin(struct pollfd pfd, struct pollfd server, char * read_line){
     if (pfd.revents & POLLIN) {
         unsigned short read_size = read(pfd.fd, read_line, MAX_MESSAGE_SIZE);
-        unsigned short text_size = (unsigned short) find_string_end(read_line);
-        if (text_size > 0) {
+        if (read_size < 0){
+            perror("reading from stdin");
+            exit(EXIT_FAILURE);
+        }
+        read_size = (unsigned short) find_string_end(read_line);
+        if (read_size > 0) {
 //            struct message * mess = malloc(sizeof(struct message) + text_size);
 //            copy_message_into_struct(mess, text_size, read_line);
 //
@@ -78,7 +82,7 @@ void try_reading_from_stdin(struct pollfd pfd, struct pollfd server, char * read
 //                    perror("close");
 //                exit(EXIT_FAILURE);
 //            }
-            send_to_server(server, read_line, text_size);
+            send_to_server(server, read_line, read_size);
         }
     }
 }
@@ -91,7 +95,7 @@ void try_reading_from_socket(struct pollfd pfd, char * read_line){
             perror("reading from stream socket");
             exit(EXIT_FAILURE);
         } else if (got < sizeof(message_size)) {
-            fprintf(stderr, "Ending connection, some trouble reading message");
+            fprintf(stderr, "Ending connection, some trouble reading message.\n");
             if (close(pfd.fd) < 0)
                 perror("close");
             exit(EXIT_FAILURE);
@@ -102,7 +106,7 @@ void try_reading_from_socket(struct pollfd pfd, char * read_line){
                 if (got < 0)
                     perror("reading from stream socket");
                 else if (got < message_size) {
-                    fprintf(stderr, "Ending connection, some trouble reading message");
+                    fprintf(stderr, "Ending connection, some trouble while reading message.\n");
                     if (close(pfd.fd) < 0)
                         perror("close");
                     exit(EXIT_FAILURE);
@@ -120,13 +124,13 @@ int main(int argc, char *argv[]) {
     struct addrinfo addr_hints, *addr_result;
     char read_line[MAX_BUFF_SIZE];
     char *port;
-    size_t line_size;
-    unsigned short text_size, message_size;
+//    size_t line_size;
+//    unsigned short text_size, message_size;
     int action;
-    int sockfd;
-    int read_size;
-    struct message *mess;
-    int got;
+//    int sockfd;
+//    int read_size;
+//    struct message *mess;
+//    int got;
 
     /* Kontrola dokumentów ... */
 //    if (argc == 2) {
@@ -182,6 +186,10 @@ int main(int argc, char *argv[]) {
     while (TRUE) {
         memset(read_line, 0, MAX_BUFF_SIZE);
         action = poll(pfd, 2, 0);
+        if (action < 0){
+            perror("poll");
+            exit(EXIT_FAILURE);
+        }
 //        if (pfd[0].revents & POLLIN) { //stdin
 //            read_size = read(pfd[0].fd, read_line, MAX_MESSAGE_SIZE);
 //            text_size = (unsigned short) find_string_end(read_line);
