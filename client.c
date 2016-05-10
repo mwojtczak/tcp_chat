@@ -95,10 +95,13 @@ void try_reading_from_socket(struct pollfd pfd, char * read_line){
                     fprintf(stderr, "Ending connection, some trouble while reading message.\n");
                     if (close(pfd.fd) < 0)
                         perror("close");
-                    exit(EXIT_FAILURE);
+                    exit(EXIT_FAILURE_CLIENT);
                 } else {
                     printf("%.*s\n", message_size, read_line);
                 }
+            } else {
+                fprintf(stderr, "Wrong size of data.\n");
+                exit(EXIT_FAILURE_CLIENT);
             }
         }
     }

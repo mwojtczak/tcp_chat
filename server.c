@@ -11,7 +11,6 @@
 #include "err.h"
 
 static int finish = FALSE;
-
 static int activeClients;
 struct pollfd client[MAX_CLIENTS];
 

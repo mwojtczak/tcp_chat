@@ -9,7 +9,8 @@
 #define MAX_PORT_NO         65535
 #define MAX_CLIENTS         21
 #define EXIT_FAILURE_PARAMS 1
-#define EXIT FAILURE        130
+#define EXIT_FAILURE_CLIENT 100
+#define EXIT_FAILURE        130
 
 struct message {
     unsigned short lenght;
