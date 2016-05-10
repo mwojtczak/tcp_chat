@@ -1,0 +1,6 @@
+Kilka uwag dotyczących szczegółów implementacyjnych:
+W zadaniu nałożono ograniczenie na liczbę klientów: 20. Dodanie nowego klienta, gdy klientów jest 20, kończy się błędem.
+Serwer próbuje odczytać całą wiadomość na raz. Jeśli się to nie uda, serwer kończy połączenie.
+
+Klient nie wysyła pustych linii do serwera ("\n").
+Klient wysyła wiadomość tekstową bez końcowego znaku \0 oraz bez końcowego znaku \n o ile występuje on na końcu linii.

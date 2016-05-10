@@ -132,7 +132,7 @@ void look_for_clients() {
                         close_client(i);
                     }
                 } else {
-                    fprintf(stderr, "Ending connection, wrng size of message.\n");
+                    fprintf(stderr, "Ending connection, wrong size of message.\n");
                     close_client(i);
                 }
             }
