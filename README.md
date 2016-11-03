@@ -7,8 +7,8 @@ Communication between clients and server is via TCP.
 
 Messeges send between server and clients should be build as it follows:
 
-Number 
 1. 16-bit number without sign, transmitted in  network byte order, not bigget than 1000 - length of sent text
+
 2. Message - one line od stdin from client, without ending character 0 and without characters moving the cursor to next line. 
 
 
