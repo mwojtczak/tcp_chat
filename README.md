@@ -1,6 +1,6 @@
 First project for Computer Networks Classes.
 
-The main ami was to create proggram for communication between users (chat) using TCP protocol.
+The main aim was to create program for communication between users (chat) using TCP protocol.
 Client should read text from stdin and should send every line to server. At the same time it should read every line sent to him by server and write it to stdout.
 Server should read messages from every cliend and send it to every connected client accept sender.
 Communication between clients and server is via TCP.
